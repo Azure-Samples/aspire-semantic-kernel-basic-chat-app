@@ -1,57 +1,38 @@
-# Project Name
+# Aspire Sample Application
 
-(short, 1-3 sentenced, description of the project)
+Welcome to the Aspire Sample Application. This project is a comprehensive example of a chat application built with .NET Aspire, Semantic Kernel, and the `@microsoft/ai-chat-protocol` package. The frontend of the application is developed using React and Vite.
 
-## Features
+## Overview
 
-This project framework provides the following features:
+The application consists of 2 main Projects:
 
-* Feature 1
-* Feature 2
-* ...
+- `ChatApp.WebApi`: This is a .NET Web API that handles chat interactions, powered by .NET Aspire and Semantic Kernel. It provides endpoints for the chat frontend to communicate with the chat backend. The `@microsoft/ai-chat-protocol` package is used to handle chat interactions, including streaming and non-streaming requests.
 
-## Getting Started
+- `ChatApp.React`: This is a React app that provides the user interface for the chat application. It is built using Vite, a modern and efficient build tool. It uses the `@microsoft/ai-chat-protocol` package to handle chat interactions, allowing for flexible communication with the chat backend.
 
-### Prerequisites
+The app also includes a class library project, ChatApp.ServiceDefaults, that contains the service defaults used by the service projects.
 
-(ideally very short, if any)
+## Pre-requisites
 
-- OS
-- Library version
-- ...
+- .NET 8 SDK
+- Optional Visual Studio 2022 17.10
+- Node.js 20
 
-### Installation
+## Running the app
 
-(ideally very short)
+If using Visual Studio, open the solution file ChatApp.sln and launch/debug the ChatApp.AppHost project.
 
-- npm install [package name]
-- mvn install
-- ...
+If using the .NET CLI, run dotnet run from the ChatApp.AppHost directory.
 
-### Quickstart
-(Add steps to get up and running quickly)
+For more information on local provisioning of Aspire applications, refer to the [Aspire Local Provisioning Guide](https://learn.microsoft.com/en-us/dotnet/aspire/deployment/azure/local-provisioning).
 
-1. git clone [repository clone url]
-2. cd [repository name]
-3. ...
-
-
-## Demo
-
-A demo app is included to show how to use the project.
-
-To run the demo, follow these steps:
-
-(Add steps to start up the demo)
-
-1.
-2.
-3.
 
 ## Resources
 
-(Any additional resources or related projects)
+- [Aspire Documentation](https://learn.microsoft.com/en-us/dotnet/aspire/)
+- [Semantic Kernel Documentation](https://learn.microsoft.com/en-us/dotnet/aspire/semantic-kernel/)
+- [Chat Protocol Documentation](https://learn.microsoft.com/en-us/dotnet/aspire/ai-chat-protocol/)
 
-- Link to supporting information
-- Link to similar sample
-- ...
+## License
+
+This project is licensed under the terms of the MIT license. See the `LICENSE` file for the full license text.
