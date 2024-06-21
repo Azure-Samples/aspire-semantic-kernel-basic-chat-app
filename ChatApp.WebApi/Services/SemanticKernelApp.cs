@@ -11,46 +11,13 @@ using Microsoft.Extensions.Options;
 
 namespace ChatApp.WebApi.Services;
 
-internal record LLMConfig;
-internal record OpenAIConfig(string Model, string Key) : LLMConfig;
-internal record AzureOpenAIConfig(string Deployment) : LLMConfig;
-
-public class AIConfig
+public class SemanticKernelConfig
 {
     public string Model { get; set; }
     public string Key { get; set; }
     public bool UseAzureOpenAI { get; set; }
     public string Deployment { get; set; }
 }
-
-internal struct SemanticKernelConfig
-{
-    internal LLMConfig LLMConfig { get; private init; }
-
-    internal static async Task<SemanticKernelConfig> CreateAsync(AIConfig aiConfig)
-    {
-        var useAzureOpenAI = aiConfig.UseAzureOpenAI;
-        if (useAzureOpenAI)
-        {
-            var azureDeployment = aiConfig.Deployment;
-
-            return new SemanticKernelConfig
-            {
-                LLMConfig = new AzureOpenAIConfig(azureDeployment),
-            };
-        }
-        else
-        {
-            var apiKey = aiConfig.Key;
-            var model = aiConfig.Model;
-            return new SemanticKernelConfig
-            {
-                LLMConfig = new OpenAIConfig(model, apiKey),
-            };
-        }
-    }
-}
-
 
 internal class SemanticKernelSession : ISemanticKernelSession
 {
@@ -129,40 +96,35 @@ internal class SemanticKernelSession : ISemanticKernelSession
 
 public class SemanticKernelApp : ISemanticKernelApp
 {
-    private readonly AIConfig _aiConfig;
+    private readonly SemanticKernelConfig _aiConfig;
     private readonly IStateStore<string> _stateStore;
     private readonly Lazy<Task<Kernel>> _kernel;
     private readonly OpenAIClient _openAIClient;
 
     private async Task<Kernel> InitKernel()
     {
-        var config = await SemanticKernelConfig.CreateAsync(_aiConfig);
         var builder = Kernel.CreateBuilder();
-        if (config.LLMConfig is AzureOpenAIConfig azureOpenAIConfig)
+        if (_aiConfig.UseAzureOpenAI)
         {
-            if (azureOpenAIConfig.Deployment is null || _openAIClient is null)
+            if (_aiConfig.Deployment is null || _openAIClient is null)
             {
                 throw new InvalidOperationException("AzureOpenAI is enabled but AzureDeployment and AzureEndpoint are not set.");
             }
-            builder.AddAzureOpenAIChatCompletion(azureOpenAIConfig.Deployment, _openAIClient);
+            builder.AddAzureOpenAIChatCompletion(_aiConfig.Deployment, _openAIClient);
         }
-        else if (config.LLMConfig is OpenAIConfig openAIConfig)
+        else 
         {
-            if (openAIConfig.Model is null || openAIConfig.Key is null)
+            if (_aiConfig.Model is null || _aiConfig.Key is null)
             {
                 throw new InvalidOperationException("AzureOpenAI is disabled but Model and APIKey are not set.");
             }
-            builder.AddOpenAIChatCompletion(openAIConfig.Model, openAIConfig.Key);
-        }
-        else
-        {
-            throw new InvalidOperationException("Unsupported LLMConfig type.");
+            builder.AddOpenAIChatCompletion(_aiConfig.Model, _aiConfig.Key);
         }
         return builder.Build();
     }
 
 
-    public SemanticKernelApp(IOptions<AIConfig> aiConfig, IStateStore<string> stateStore, OpenAIClient openAIClient)
+    public SemanticKernelApp(IOptions<SemanticKernelConfig> aiConfig, IStateStore<string> stateStore, OpenAIClient openAIClient)
     {
         _aiConfig = aiConfig.Value;
         _stateStore = stateStore;

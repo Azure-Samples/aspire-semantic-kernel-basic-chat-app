@@ -14,7 +14,7 @@ builder.AddServiceDefaults();
 
 builder.AddAzureOpenAIClient("openAi");
 
-builder.Services.Configure<AIConfig>(builder.Configuration.GetSection("AI"));
+builder.Services.Configure<SemanticKernelConfig>(builder.Configuration.GetSection("AI"));
 builder.Services.AddSingleton<IStateStore<string>>(new InMemoryStore<string>());
 builder.Services.AddSingleton<ISemanticKernelApp, SemanticKernelApp>();
 
