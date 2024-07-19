@@ -4,29 +4,19 @@
 using System.Text;
 using Azure.Identity;
 using Microsoft.SemanticKernel;
-
 using ChatApp.WebApi.Interfaces;
 using ChatApp.WebApi.Model;
 using Azure.AI.OpenAI;
+using Microsoft.Extensions.Options;
 
 namespace ChatApp.WebApi.Services;
 
-internal record AzureOpenAIConfig(string Deployment, string Endpoint);
-
-internal struct SemanticKernelConfig
+public class SemanticKernelConfig
 {
-    internal AzureOpenAIConfig AzureOpenAIConfig { get; private init; }
-
-    internal static async Task<SemanticKernelConfig> CreateAsync(ISecretStore secretStore, CancellationToken cancellationToken)
-    {
-            var azureDeployment = await secretStore.GetSecretAsync("AzureDeployment", cancellationToken);
-            var azureEndpoint = await secretStore.GetSecretAsync("AzureEndpoint", cancellationToken);
-
-            return new SemanticKernelConfig
-            {
-                AzureOpenAIConfig = new AzureOpenAIConfig(azureDeployment, azureEndpoint),
-            };
-    }
+    public string Model { get; set; }
+    public string Key { get; set; }
+    public bool UseAzureOpenAI { get; set; }
+    public string Deployment { get; set; }
 }
 
 internal class SemanticKernelSession : ISemanticKernelSession
@@ -52,7 +42,7 @@ internal class SemanticKernelSession : ISemanticKernelSession
         ChatBot:";
 
     public async Task<AIChatCompletion> ProcessRequest(AIChatRequest message)
-    {        
+    {
         var chatFunction = _kernel.CreateFunctionFromPrompt(prompt);
         var userInput = message.Messages.Last();
         string history = await _stateStore.GetStateAsync(Id) ?? "";
@@ -75,7 +65,7 @@ internal class SemanticKernelSession : ISemanticKernelSession
     }
 
     public async IAsyncEnumerable<AIChatCompletionDelta> ProcessStreamingRequest(AIChatRequest message)
-    {        
+    {
         var chatFunction = _kernel.CreateFunctionFromPrompt(prompt);
         var userInput = message.Messages.Last();
         string history = await _stateStore.GetStateAsync(Id) ?? "";
@@ -106,32 +96,42 @@ internal class SemanticKernelSession : ISemanticKernelSession
 
 public class SemanticKernelApp : ISemanticKernelApp
 {
-    private readonly ISecretStore _secretStore;
+    private readonly SemanticKernelConfig _aiConfig;
     private readonly IStateStore<string> _stateStore;
     private readonly Lazy<Task<Kernel>> _kernel;
     private readonly OpenAIClient _openAIClient;
+
     private async Task<Kernel> InitKernel()
     {
-        var config = await SemanticKernelConfig.CreateAsync(_secretStore, CancellationToken.None);
         var builder = Kernel.CreateBuilder();
-        if (config.AzureOpenAIConfig is AzureOpenAIConfig azureOpenAIConfig)
+        if (_aiConfig.UseAzureOpenAI)
         {
-            if (azureOpenAIConfig.Deployment is null || azureOpenAIConfig.Endpoint is null)
+            if (_aiConfig.Deployment is null || _openAIClient is null)
             {
                 throw new InvalidOperationException("AzureOpenAI is enabled but AzureDeployment and AzureEndpoint are not set.");
             }
-            builder.AddAzureOpenAIChatCompletion(azureOpenAIConfig.Deployment, _openAIClient);
+            builder.AddAzureOpenAIChatCompletion(_aiConfig.Deployment, _openAIClient);
+        }
+        else 
+        {
+            if (_aiConfig.Model is null || _aiConfig.Key is null)
+            {
+                throw new InvalidOperationException("AzureOpenAI is disabled but Model and APIKey are not set.");
+            }
+            builder.AddOpenAIChatCompletion(_aiConfig.Model, _aiConfig.Key);
         }
         return builder.Build();
     }
 
-    public SemanticKernelApp(ISecretStore secretStore, IStateStore<string> stateStore, OpenAIClient openAIClient)
+
+    public SemanticKernelApp(IOptions<SemanticKernelConfig> aiConfig, IStateStore<string> stateStore, OpenAIClient openAIClient)
     {
-        _secretStore = secretStore;
+        _aiConfig = aiConfig.Value;
         _stateStore = stateStore;
         _openAIClient = openAIClient;
         _kernel = new(() => Task.Run(InitKernel));
     }
+
 
     public async Task<ISemanticKernelSession> CreateSession(Guid sessionId)
     {
