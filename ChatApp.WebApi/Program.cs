@@ -3,7 +3,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
+using ChatApp.WebApi;
 using ChatApp.WebApi.Interfaces;
 using ChatApp.WebApi.Model;
 using ChatApp.WebApi.Services;
@@ -11,6 +11,7 @@ using ChatApp.WebApi.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddSemanticKernelTelemetry();
 
 builder.AddAzureOpenAIClient("openAi");
 
